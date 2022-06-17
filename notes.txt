@@ -1,0 +1,113 @@
+### What's an ORM ? ###
+
+Wikipedia says:
+"Object–relational mapping (ORM, O/RM, and O/R mapping tool) in computer science is a programming technique
+ for converting data between type systems using object-oriented programming languages. This creates, in effect,
+ a "virtual object database" that can be used from within the programming language."
+
+In practice, with simple words:
+"Program that connects to a database system (MySQL here at luko), map the content of the database into
+ objects that the language used (python at Luko) understands and therefore, can work with (read/update)."
+
+
+ ### Python most famous SQL ORM: SqlAlchemy ###
+ ## General concepts ##
+
+ 1. The Engine
+ From SqlAlchemy official doc:
+ "The Engine is the starting point for any SQLAlchemy application. It’s “home base” for the actual database and its DBAPI,
+  delivered to the SQLAlchemy application through a connection pool and a Dialect, which describes how to talk to a specific
+  kind of database/DBAPI combination."
+
+  vocabulary:
+    - DBAPI: low level python API to interact with databases
+    - connection pool: a pool system that maintains long running connections to the DB / manages things (number of connections and all those kind of things)
+    - Dialect: specific SqlAlchemy object to let know the DBAPI "how" to talk with DB depending on the DB system (postgres, mysql...)
+
+  Concretely, the Engine knows every specificities of the DB you need to connect to (url, type of db...), creates and holds a Dialect object specific to
+  the type of your DB, and creates a connection Pool. When you want to access the DB, a connection is given by the Pool and "talks" to the DBAPI thank's to
+  the Dialect object.
+
+  The Engine can be used to directly make db requests
+  --- live code --- (example_1.py)
+
+ 2. A Connection
+ From the Engine, you can get a Connection object through the method `connect()`. The major use of a connection object is to allow to use SQL
+ "transactions". When using a transaction, you must explicitly commit it.
+
+ vocabulary:
+   - transaction: "A transaction is a single unit of work. If a transaction is successful, all of the data modifications made during the transaction
+                   are committed and become a permanent part of the database. If a transaction encounters errors and must be canceled or rolled back,
+                   then all of the data modifications are erased."
+--- live code --- (example_1.py)
+
+3. Sessions
+This is finally where the magic happens. So far we saw the "low level" layers of SqlAlchemy that interacts with the DB, but what we want is an
+abstraction that let us use python objects to play with the DB.
+
+--- live code --- (example_2.py)
+
+
+ ## How we use it at Luko (FlaskSqlAlchemy) ##
+
+ To understand FlaskSqlAlchemy, one must first know about "flask extensions".
+ From the Flask official doc: "Extensions are extra packages that add functionality to a Flask application. For example, an extension might
+                               add support for sending email or connecting to a database".
+
+In simple words, a flask extension is simply an independent python module that define a importable object that can be initiated with an
+instance of a Flask application. This object (usually a simple class) contains attributes (methods, properties ...) that define
+behaviours to adopt using the Flask app instance and its attributes.
+
+So, FlaskSqlAlchemy is a flask extension, hence a python module, that uses the instance of the supplied flask application to:
+  - setup the connection with the DB (using `app.config`)
+  - "provide useful defaults and extra helpers" (BaseQuery that automatically handle pagination, those kind of things)
+
+FlaskSqlAlchemy `__init__` method instanciate a Session object that you can use as shown before, but provide a much more convenient way
+using its `Model` attribute, which is basically `declarative_base` as we saw previously, to which is tied a `query` attribute that allow
+us to directly query from a class inheriting from `Model`! (see source code)
+
+--- live code --- (Protect)
+
+
+ ## Relationships in FlaskSqlAlchemy ##
+
+ To define a relationship, you need:
+  - 2 Model classes to be related
+  - a `relationship` attribute in one model
+  - a `ForeignKey` attribute in the other
+
+  --- live code --- (example_3.py)
+
+
+
+ ### Database migration: Alembic to the rescue ###
+
+ Alembic is a tool to help manage database migration (tables creation/modifications).
+ The idea is rather simple:
+  - each migration is defined in a python script (that we call ... a migration script!)
+  - scripts must be run in a linear order
+  - this order is maintained thanks to unique ID for each script
+  - each script keeps a reference (the unique ID) of the previous script in the chain
+
+ So that a migration history would look like this:
+
+```
+ 383jd709
+ 109lk475
+ 0l8yhd6j
+ ...
+
+ ```
+
+ ## Integration with Flask ##
+
+Just as for SqlAlchemy, Alembic has its own flask extension: Flask-Migrate
+Flask-Migrate provides useful command line helpers
+
+ --- live code ---
+
+
+### Useful resources ###
+
+FlaskSqlAlchemy source code: https://github.com/pallets-eco/flask-sqlalchemy/blob/e5bf821072de0d55ff92891432004322864a7265/src/flask_sqlalchemy/__init__.py
+FlaskSqlAlchemy model/relationships example: https://flask-sqlalchemy.palletsprojects.com/en/2.x/models/

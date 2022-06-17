@@ -1,0 +1,9 @@
+ - requirements: sqlalchemy, pymysql, ipython
+
+Commands:
+ ```
+ > docker run -d -p 3399:3306 --name orm_presentation_sql_container -e MYSQL_USER=etienne -e MYSQL_PASSWORD=1234 -e MYSQL_DATABASE=presentation_db -e MYSQL_RANDOM_ROOT_PASSWORD=1 mysql:5.7
+ > podman exec -it orm_presentation_sql_container mysql -uelachere -p1234
+ > use presentation_db;
+ > create table user (id int, name varchar(255));
+ ```
